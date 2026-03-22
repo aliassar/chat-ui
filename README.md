@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Doodle Chat
 
-## Getting Started
+Next.js 16, React 19, TypeScript, Tailwind 4, Axios
 
-First, run the development server:
+## How it works
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+page.tsx → ChatPage
+                ├── ChatHeader
+                ├── ConnectionBanner
+                ├── MessageList
+                │       ├── DateDivider
+                │       └── MessageBubble
+                └── MessageInput
+
+useMessages ──→ lib/api (axios) ──→ Backend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`useMessages` handles all the data — fetching, polling, sending. Everything else just gets props.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Why I did things this way
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Went with polling (3s interval) because the backend is REST-only. I grab new messages using `?after=lastTimestamp` so I'm not refetching the whole list each time. Works fine for the scale of this app, for real-time I'd swap to websockets inside the hook without touching any components.
 
-## Learn More
+Props over Context — there's only one screen and one level of nesting, Context would be overkill here.
 
-To learn more about Next.js, take a look at the following resources:
+Optimistic updates on send so it feels fast. If the POST fails it rolls back and keeps the text in the input (losing your message on a network blip would be annoying).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Auth token goes straight into the axios instance headers since it's a static token from the env. The health endpoint sets `Authorization: undefined` to skip it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+axios-retry handles transient failures with exponential backoff. After 3 failed polls in a row the banner shows up so the user knows what's going on.
 
-## Deploy on Vercel
+I check `/health` before fetching messages on first load. Lets me tell the user "server is down" instead of some cryptic error.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Validation limits (500 chars message, 50 chars name) match what the backend enforces with Zod. No point sending a request that's going to fail.

@@ -28,7 +28,7 @@ export function useMessages() {
         setIsLoading(true);
         setError(null);
 
-        // hit health first to distinguish "server down" from other errors
+        // check server first
         try {
             await healthApi.check();
         } catch {
@@ -56,6 +56,7 @@ export function useMessages() {
     useEffect(() => {
         if (isLoading || error) return;
 
+        // poll for new messages
         const id = setInterval(async () => {
             try {
                 const cursor = messages[messages.length - 1]?.createdAt;
@@ -92,6 +93,7 @@ export function useMessages() {
             const saved = await messagesApi.send(text, currentUser);
             setMessages(prev => prev.map(m => m._id === temp._id ? saved : m));
         } catch (err) {
+            // rollback on failure
             setMessages(prev => prev.filter(m => m._id !== temp._id));
             throw err;
         }
