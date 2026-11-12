@@ -1,5 +1,7 @@
 # Doodle Chat
 
+[![ci](https://github.com/aliassar/chat-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/aliassar/chat-ui/actions/workflows/ci.yml)
+
 Next.js 16, React 19, TypeScript, Tailwind 4, Axios
 
 ## How it works
